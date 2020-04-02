@@ -179,14 +179,14 @@ namespace container {
         std::reference_wrapper<const Tkey> keyRw(secondSet.begin()->second->first);
         std::reference_wrapper<const Tval> valRw(secondSet.begin()->first);
         typename bimap::RetPair tempPair(keyRw, valRw);
-        for (auto it = secondSet.begin(); it != secondSet.end(); ++it) {
-            if (it->first == val) {
-                keyRw = it->second->first;
-                valRw = it->first;
-                typename bimap::RetPair tempPair2(keyRw, valRw);
-                tempPair = tempPair2;
-                flag = true;
-            }
+        Setpair p(std::cref(val), nullptr);
+        auto it = secondSet.find(p);
+        if (it != secondSet.end()) {
+            keyRw = it->second->first;
+            valRw = it->first;
+            typename bimap::RetPair tempPair2(keyRw, valRw);
+            tempPair = tempPair2;
+            flag = true;
         }
         if (!flag) {
             throw out_of_range("error");
