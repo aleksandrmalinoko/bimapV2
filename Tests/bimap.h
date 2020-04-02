@@ -28,15 +28,18 @@ namespace container {
         };
 
         using Set = std::set<Setpair, LocalLess>;
-        std::size_t bimapSize;
+
         Map firstMap;
         Set secondSet;
     public:
-        bimap();
 
-        bimap(const Tkey &key, const Tval &val);
+        bimap() = default;
 
-        ~bimap();
+        bimap(const bimap&) = delete;
+        bimap& operator=(const bimap&) = delete;
+
+        bimap(bimap&&) = default;
+        bimap& operator = (bimap&&) = default;
 
         std::size_t size() const;
 
@@ -59,32 +62,15 @@ namespace container {
         RetPair valGet(const Tval &val) const;
     };
 
-    template<typename Tkey, typename Tval>
-    bimap<Tkey, Tval>::bimap() {
-        bimapSize = 0;
-    }
-
-    template<typename Tkey, typename Tval>
-    bimap<Tkey, Tval>::bimap(const Tkey &key, const Tval &val) {
-        std::pair<typename bimap::Map::const_iterator, bool> ret;
-        ret = firstMap.insert(std::pair<Tkey, Tval>(key, val));
-        std::reference_wrapper<const Tval> rwval(val);
-        typename bimap::Setpair tempPair(rwval, ret.first);
-        secondSet.insert(tempPair);
-        bimapSize = 1;
-    }
-
-    template<typename Tkey, typename Tval>
-    bimap<Tkey, Tval>::~bimap() = default;
 
     template<typename Tkey, typename Tval>
     std::size_t bimap<Tkey, Tval>::size() const {
-        return bimapSize;
+        return firstMap.size();
     }
 
     template<typename Tkey, typename Tval>
     bool bimap<Tkey, Tval>::isEmpty() const {
-        return !bimapSize;
+        return firstMap.empty();
     }
 
     template<typename Tkey, typename Tval>
@@ -96,12 +82,9 @@ namespace container {
     template<typename Tkey, typename Tval>
     bool bimap<Tkey, Tval>::checkVal(const Tval &val) const {
 
-        for (auto it = secondSet.begin(); it != secondSet.end(); ++it) {
-            if (it->first == val) {
-                return true;
-            }
-        }
-        return false;
+        Setpair p(std::cref(val), nullptr);
+        auto search = secondSet.find(p);
+        return search != secondSet.end();
     }
 
     template<typename Tkey, typename Tval>
@@ -119,7 +102,6 @@ namespace container {
             firstMap.erase(ret.first);
             return false;
         }
-        bimapSize += 1;
         return true;
     }
 
@@ -144,36 +126,29 @@ namespace container {
             return false;
         }
 
-        bimapSize += 1;
         return true;
     }
 
     template<typename Tkey, typename Tval>
     void bimap<Tkey, Tval>::keyErase(const Tkey &key) {
-        if (checkKey(key) == 1) {
+        if (checkKey(key)) {
             auto fmit = firstMap.find(key);
             Tval T = fmit->second;
-            for (auto it = secondSet.begin(); it != secondSet.end(); ++it) {
-                if (it->first == T) {
-                    firstMap.erase(it->second);
-                    it = secondSet.erase(it);
-                }
-            }
+            Setpair p(std::cref(T), nullptr);
+            auto fsit = secondSet.find(p);
+            firstMap.erase(fmit->first);
+            secondSet.erase(fsit);
         }
-        bimapSize -= 1;
     }
 
     template<typename Tkey, typename Tval>
     void bimap<Tkey, Tval>::valErase(const Tval &val) {
         if (checkVal(val) == 1) {
-            for (auto it = secondSet.begin(); it != secondSet.end(); ++it) {
-                if (it->first == val) {
-                    firstMap.erase(it->second);
-                    it = secondSet.erase(it);
-                }
-            }
+            Setpair p(std::cref(val), nullptr);
+            auto fsit = secondSet.find(p);
+            firstMap.erase(fsit->second);
+            secondSet.erase(fsit);
         }
-        bimapSize -= 1;
     }
 
 
